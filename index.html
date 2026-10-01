@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Focus</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#1f6f54">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Daily Focus">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{--bg:#f3f5f0;--card:#fff;--ink:#1d2a24;--mute:#66736b;--line:#d9dfd6;--accent:#1f6f54;--accent-ink:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--card:#1b241f;--ink:#e8efe9;--mute:#94a39a;--line:#2d3a33;--accent:#4fb28a;--accent-ink:#0b1410}}
+:root[data-theme="dark"]{--bg:#121815;--card:#1b241f;--ink:#e8efe9;--mute:#94a39a;--line:#2d3a33;--accent:#4fb28a;--accent-ink:#0b1410}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Iowan Old Style",serif;line-height:1.5}
+main{max-width:560px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:26px;margin:8px 0 4px}
+.sub{color:var(--mute);margin:0 0 18px;font-family:system-ui,sans-serif;font-size:14px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px;font-family:system-ui,sans-serif}
+h2{font-family:Georgia,serif;font-size:18px;margin:0 0 10px}
+label.row{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+label.row:first-of-type{border-top:0}
+input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:24px;height:24px;margin:1px 0 0;border:2px solid var(--mute);border-radius:6px;background:transparent;cursor:pointer}
+input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+input[type=checkbox]:checked::after{content:"";display:block;width:6px;height:11px;margin:1px 0 0 7px;border:solid var(--accent-ink);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+input[type=checkbox]:focus-visible,input[type=text]:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.t{flex:1}.t small{display:block;color:var(--mute);font-size:13px}
+input:checked+.t{color:var(--mute);text-decoration:line-through}
+input[type=text]{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);margin-top:6px}
+.fl{font-size:14px;color:var(--mute);margin-top:10px;display:block}
+.fl:first-of-type{margin-top:0}
+.prog{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:18px}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+button{font:inherit;font-size:15px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;width:100%}
+</style>
+</head>
+<body>
+<main>
+<h1>Daily Focus Checklist</h1>
+<p class="sub">One main thing. Timed blocks. Switch only at breaks.</p>
+<div class="prog"><i id="bar"></i></div>
+
+<section>
+<h2>Tonight (2 min)</h2>
+<label class="fl">Main thing for tomorrow<input type="text" data-k="main" placeholder="One task only"></label>
+<label class="fl">Done looks like<input type="text" data-k="done" placeholder="One sentence, rough version counts"></label>
+</section>
+
+<section>
+<h2>Tomorrow</h2>
+<label class="row"><input type="checkbox" data-k="b1"><span class="t">Block 1 (45 min)<small>Main thing only. Phone out of reach.</small></span></label>
+<label class="row"><input type="checkbox" data-k="br1"><span class="t">Break (10 min)<small>Switching tasks is allowed only here.</small></span></label>
+<label class="row"><input type="checkbox" data-k="b2"><span class="t">Block 2 (45 min)<small>Finish the main thing, or start a second one.</small></span></label>
+<label class="row"><input type="checkbox" data-k="br2"><span class="t">Break (10 min)</span></label>
+<label class="row"><input type="checkbox" data-k="b3"><span class="t">Block 3 (45 min)<small>Smaller tasks from the parking list.</small></span></label>
+</section>
+
+<section>
+<h2>Parking list</h2>
+<input type="text" data-k="p1" placeholder="One line, then back to work">
+<input type="text" data-k="p2" placeholder="One line">
+<input type="text" data-k="p3" placeholder="One line">
+</section>
+
+<section>
+<h2>End of day (2 min)</h2>
+<label class="fl">Finished<input type="text" data-k="fin" placeholder="What got done"></label>
+<label class="fl">Carry over to tomorrow<input type="text" data-k="carry" placeholder="What moves forward"></label>
+</section>
+
+<button id="reset" type="button">Start a new day</button>
+</main>
+<script>
+var KEY="focus-checklist-v1",state={};
+try{state=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){state={}}
+var fields=[].slice.call(document.querySelectorAll("[data-k]"));
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function progress(){
+  var boxes=fields.filter(function(f){return f.type==="checkbox"});
+  var n=boxes.filter(function(b){return b.checked}).length;
+  document.getElementById("bar").style.width=(n/boxes.length*100)+"%";
+}
+fields.forEach(function(f){
+  var k=f.dataset.k;
+  if(f.type==="checkbox")f.checked=!!state[k];else f.value=state[k]||"";
+  f.addEventListener("input",function(){state[k]=f.type==="checkbox"?f.checked:f.value;save();progress()});
+});
+document.getElementById("reset").addEventListener("click",function(){
+  fields.forEach(function(f){
+    var k=f.dataset.k;
+    if(f.type==="checkbox"){f.checked=false;state[k]=false}
+    else if(k==="carry"){f.value=""; state[k]=""}
+    else if(k==="main"||k==="done"){f.value="";state[k]=""}
+    else if(k==="fin"){f.value="";state[k]=""}
+  });
+  save();progress();
+});
+progress();
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+</script>
+</body>
+</html>
